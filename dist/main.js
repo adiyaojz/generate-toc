@@ -25,7 +25,8 @@ const DEFAULT_SETTINGS = {
 };
 const texts = {
     en: {
-        enableCodeBlock: "Enable Code Block",
+        //enableCodeBlock: "Enable Code Block", # Use sentence case in UI
+        enableCodeBlock: "Enable code block",
         codeBlockDesc: "Enable or disable the code block. It is recommended to enable this option. If disabled, future TOC updates might cause incorrect document deletions or failure to remove previous TOCs. Before disabling, please back up your document and set appropriate start and end markers.",
         titleContent: "Title Content",
         customTitleContent: "Custom title content",
@@ -41,8 +42,8 @@ const texts = {
         tailNoadTocTip: "Tail No-ad-toc Tip",
         customHeadTip: "Custom head no-ad-toc tip, preferably unique or use the default",
         customTailTip: "Custom tail no-ad-toc tip, preferably unique or use the default",
-        tocLevel: 'TOC Level',
-		selectTocLevel: 'Select TOC level (1 to 6)',
+        codeBlockTip: "Code Block Title",
+        codeBlockDescTip: "Customize the title of the code block",
     },
     zh: {
         enableCodeBlock: "启用代码块",
@@ -61,8 +62,8 @@ const texts = {
         tailNoadTocTip: "无代码块尾部标识",
         customHeadTip: "尽量设置不一样的标识，或者使用默认即可，主要检索标识进行删除",
         customTailTip: "尽量设置不一样的标识，或者使用默认即可",
-		tocLevel: '生成目录级别',
-		selectTocLevel: '选择生成目录的级别（1 到 6）',
+        codeBlockTip: "代码块标题",
+        codeBlockDescTip: "自定义代码块的标题",
     },
 };
 class UpdateAdTocPlugin extends obsidian_1.Plugin {
@@ -74,7 +75,8 @@ class UpdateAdTocPlugin extends obsidian_1.Plugin {
             // Add command to update ad-toc blocks
             this.addCommand({
                 id: "generate-toc",
-                name: "Generate TOC(一键生成目录)",
+                //name: "Generate TOC(一键生成目录)", # This should also be part of the translations.
+                name: "Generate TOC",
                 callback: () => this.updateAdTocBlocks(),
             });
             // Add settings tab
@@ -92,12 +94,15 @@ class UpdateAdTocPlugin extends obsidian_1.Plugin {
         });
     }
     updateAdTocBlocks() {
-        const activeLeaf = this.app.workspace.activeLeaf;
-        if (!activeLeaf || !activeLeaf.view || !activeLeaf.view.editor) {
+        const activeLeaf = this.app.workspace.activeEditor;
+        //const activeLeaf = this.app.workspace.activeLeaf;
+        if (!activeLeaf || !activeLeaf.editor) {
             console.error("No active editor found");
             return;
         }
-        const editor = activeLeaf.view.editor;
+        //const editor = activeLeaf.view.editor;
+        const editor = activeLeaf.editor;
+        //let content = editor.getValue();
         let content = editor.getValue();
         // Remove existing ad-toc block if it exists
         const adTocBlockPattern = new RegExp(`\`\`\`${this.settings.codeBlockTitle}\n[\\s\\S]*?\n\`\`\`\n`, "g");
@@ -162,8 +167,7 @@ function heading(arr, l = 3) {
         .map((item) => {
         let heading = item.heading;
         heading = heading.replace(/\[\[|\]\]/g, "");
-        heading =
-            generateSpaces(item.level) + `- [ ] [[# ${heading.trim()}]]`;
+        heading = generateSpaces(item.level) + `- [ ] [[# ${heading.trim()}]]`;
         return heading;
     })
         .join("\n");
@@ -177,7 +181,7 @@ class AdTocSettingTab extends obsidian_1.PluginSettingTab {
         const { containerEl } = this;
         const lang = "zh"; // Set language to Chinese for demonstration
         containerEl.empty();
-        containerEl.createEl("h2", { text: "一键生成目录插件设置" });
+        //containerEl.createEl("h2", { text: "一键生成目录插件设置" });
         new obsidian_1.Setting(containerEl)
             .setName(texts[lang].enableCodeBlock)
             .setDesc(texts[lang].codeBlockDesc)
@@ -193,8 +197,8 @@ class AdTocSettingTab extends obsidian_1.PluginSettingTab {
             ? "block"
             : "none";
         new obsidian_1.Setting(codeBlockSettings)
-            .setName("代码块标题")
-            .setDesc("自定义代码块的标题")
+            .setName(texts[lang].codeBlockTip)
+            .setDesc(texts[lang].codeBlockDescTip)
             .addText((text) => text
             .setValue(this.plugin.settings.codeBlockTitle)
             .onChange((value) => __awaiter(this, void 0, void 0, function* () {
@@ -285,8 +289,7 @@ class AdTocSettingTab extends obsidian_1.PluginSettingTab {
             this.display(); // 重新渲染设置
         })));
         const collapseSettings = containerEl.createDiv();
-        collapseSettings.style.display = this.plugin.settings
-            .enableCollapseContent
+        collapseSettings.style.display = this.plugin.settings.enableCollapseContent
             ? "block"
             : "none";
         new obsidian_1.Setting(collapseSettings)
@@ -301,20 +304,6 @@ class AdTocSettingTab extends obsidian_1.PluginSettingTab {
             this.plugin.settings.collapseContent = value;
             yield this.plugin.saveSettings();
         })));
-
-        new obsidian_1.Setting(containerEl)
-            .setName(texts[lang].tocLevel)
-            .setDesc(texts[lang].selectTocLevel)
-            .addDropdown(dropdown => {
-                for (let i = 1; i <= 6; i++) {
-                    dropdown.addOption(i.toString(), i.toString());
-                }
-                dropdown.setValue(this.plugin.settings.tocLevel.toString());
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.tocLevel = parseInt(value, 10);
-                    await this.plugin.saveSettings();
-                });
-            });
     }
 }
 exports.default = UpdateAdTocPlugin;
